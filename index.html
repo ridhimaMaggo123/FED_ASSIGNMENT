@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GitHub Repo Fetcher</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f6f8fa;
+      text-align: center;
+      padding: 30px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    input {
+      width: 80%;
+      padding: 10px;
+      font-size: 16px;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .repo {
+      display: inline-block;
+      margin: 5px;
+      padding: 8px 12px;
+      background-color: #e36209;
+      color: white;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>API Call</h2>
+  <form id="githubForm">
+    <input type="text" id="username" placeholder="GitHub username..." value="ridhimaMaggo123" />
+    <br>
+    <button type="submit">Pull User Data</button>
+  </form>
+
+  <div id="output"></div>
+</div>
+
+<script>
+  const form = document.getElementById("githubForm");
+  const output = document.getElementById("output");
+
+  form.addEventListener("submit", function(e) {
+    e.preventDefault();
+    const username = document.getElementById("username").value.trim();
+
+    if (!username) return;
+
+    output.innerHTML = "Loading...";
+
+    fetch(`https://api.github.com/users/${username}`)
+      .then(res => {
+        if (!res.ok) throw new Error("User not found");
+        return res.json();
+      })
+      .then(user => {
+        return fetch(`https://api.github.com/users/${username}/repos`)
+          .then(res => res.json())
+          .then(repos => {
+            showUserInfo(user, repos);
+          });
+      })
+      .catch(err => {
+        output.innerHTML = `<p class="error">User not found</p>`;
+      });
+  });
+
+  function showUserInfo(user, repos) {
+    let html = `
+      <h3>${user.name || user.login} (@${user.login})</h3>
+      <img src="${user.avatar_url}" alt="avatar" width="100" style="border-radius:50%"><br>
+      Followers: ${user.followers} - Following: ${user.following} <br>
+      Public Repos: ${user.public_repos}
+      <h4>Repos List:</h4>
+    `;
+
+    repos.forEach(repo => {
+      html += `<a class="repo" href="${repo.html_url}" target="_blank">${repo.name}</a>`;
+    });
+
+    output.innerHTML = html;
+  }
+</script>
+
+</body>
+</html>
