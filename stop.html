@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Async Stopwatch</title>
+<style>
+  body {
+    background-color: #000;
+    color: #fff;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+  .container {
+    text-align: center;
+    width: 300px;
+  }
+  #timeDisplay {
+    font-size: 4rem;
+    color: #ff5722;
+    margin-bottom: 30px;
+  }
+  .buttons {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+  }
+  button {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    border: 2px solid #444;
+    background-color: #222;
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  button:hover {
+    background-color: #333;
+  }
+  .stop {
+    background-color: #400;
+    border-color: #600;
+    color: red;
+  }
+  .lap-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    text-align: left;
+  }
+  .lap-list li {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid #222;
+    color: #bbb;
+  }
+  .lap-list li span {
+    color: #fff;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div id="timeDisplay">00:00:00</div>
+  <div class="buttons">
+    <button id="lapBtn">Lap</button>
+    <button id="startBtn">Start</button>
+  </div>
+  <ul class="lap-list" id="lapList"></ul>
+</div>
+
+<script>
+  let startTime = 0;
+  let elapsedTime = 0;
+  let timerInterval;
+  let running = false;
+  let lapCounter = 1;
+
+  const timeDisplay = document.getElementById("timeDisplay");
+  const startBtn = document.getElementById("startBtn");
+  const lapBtn = document.getElementById("lapBtn");
+  const lapList = document.getElementById("lapList");
+
+  function formatTime(ms) {
+    let totalSeconds = Math.floor(ms / 1000);
+    let minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+    let seconds = String(totalSeconds % 60).padStart(2, "0");
+    let milliseconds = String(Math.floor((ms % 1000) / 10)).padStart(2, "0");
+    return `${minutes}:${seconds}:${milliseconds}`;
+  }
+
+  function updateTime() {
+    elapsedTime = Date.now() - startTime;
+    timeDisplay.textContent = formatTime(elapsedTime);
+  }
+
+  // Async function simulating server save
+  async function saveLapAsync(lapTime) {
+    return new Promise(resolve => {
+      console.log("Saving lap:", lapTime);
+      setTimeout(() => {
+        console.log("Lap saved successfully!");
+        resolve();
+      }, 1000); // Simulate network delay
+    });
+  }
+
+  startBtn.addEventListener("click", () => {
+    if (!running) {
+      startTime = Date.now() - elapsedTime;
+      timerInterval = setInterval(updateTime, 10);
+      running = true;
+      startBtn.textContent = "Stop";
+      startBtn.classList.add("stop");
+      lapBtn.textContent = "Lap";
+    } else {
+      clearInterval(timerInterval);
+      running = false;
+      startBtn.textContent = "Start";
+      startBtn.classList.remove("stop");
+      lapBtn.textContent = "Reset";
+    }
+  });
+
+  lapBtn.addEventListener("click", async () => {
+    if (running) {
+      const lapTime = formatTime(elapsedTime);
+      const li = document.createElement("li");
+      li.innerHTML = `<div>Lap ${lapCounter}</div> <span>${lapTime}</span>`;
+      lapList.prepend(li);
+      lapCounter++;
+
+      // Save lap asynchronously without stopping timer
+      await saveLapAsync(lapTime);
+    } else {
+      elapsedTime = 0;
+      lapCounter = 1;
+      timeDisplay.textContent = "00:00:00";
+      lapList.innerHTML = "";
+      lapBtn.textContent = "Lap";
+    }
+  });
+</script>
+
+</body>
+</html>
