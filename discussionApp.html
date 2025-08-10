@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Discussion Portal</title>
+<style>
+:root {
+  --teal: #007b7b;
+  --accent: #1d8cff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+.topbar {
+  background: var(--teal);
+  color: white;
+  font-weight: bold;
+  font-size: 20px;
+  padding: 12px 18px;
+}
+.container {
+  display: flex;
+  height: calc(100vh - 48px);
+}
+.left-pane {
+  width: 300px;
+  background: #fafafa;
+  border-right: 1px solid #ddd;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+.left-controls {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+.left-controls input {
+  flex: 1;
+  padding: 5px;
+}
+.primary {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 6px 8px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.question-list {
+  flex: 1;
+  overflow-y: auto;
+}
+.q-item {
+  border-bottom: 1px solid #eee;
+  padding: 8px;
+  cursor: pointer;
+}
+.q-item:hover {
+  background: #f0f0f0;
+}
+.q-title {
+  font-weight: bold;
+}
+.q-sub {
+  font-size: 12px;
+  color: #555;
+}
+.right-pane {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+}
+.card {
+  background: white;
+  border: 1px solid #ddd;
+  padding: 12px;
+  border-radius: 4px;
+}
+input, textarea {
+  width: 100%;
+  padding: 6px;
+  margin: 5px 0 10px;
+}
+textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+.form-actions {
+  text-align: right;
+}
+.responses {
+  margin-top: 15px;
+}
+.response-item {
+  background: #fafafa;
+  border-left: 3px solid #ddd;
+  padding: 6px;
+  margin-bottom: 8px;
+}
+.response-name {
+  font-weight: bold;
+}
+.resolve-btn {
+  background: red;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+</style>
+</head>
+<body>
+<div class="topbar">Discussion Portal</div>
+<div class="container">
+  <aside class="left-pane">
+    <div class="left-controls">
+      <button id="newQuestionBtn" class="primary">New Question</button>
+      <input id="searchBox" placeholder="search..." />
+    </div>
+    <div id="questionList" class="question-list"></div>
+  </aside>
+  <main class="right-pane" id="detailArea"></main>
+</div>
+
+<script>
+let questions = JSON.parse(localStorage.getItem("questions") || "[]");
+
+const questionListEl = document.getElementById("questionList");
+const detailArea = document.getElementById("detailArea");
+
+function saveData() {
+  localStorage.setItem("questions", JSON.stringify(questions));
+}
+
+function renderList(filter="") {
+  questionListEl.innerHTML = "";
+  questions
+    .filter(q => (q.title + " " + q.body).toLowerCase().includes(filter))
+    .forEach(q => {
+      const item = document.createElement("div");
+      item.className = "q-item";
+      item.innerHTML = `<div class="q-title">${q.title}</div>
+                        <div class="q-sub">${q.body.substring(0, 50)}...</div>`;
+      item.onclick = () => showDetail(q.id);
+      questionListEl.appendChild(item);
+    });
+}
+
+function showNewForm() {
+  detailArea.innerHTML = `
+    <div class="card">
+      <h2>Welcome to Discussion Portal!</h2>
+      <label>Subject</label>
+      <input id="qTitle" />
+      <label>Question</label>
+      <textarea id="qBody"></textarea>
+      <div class="form-actions">
+        <button class="primary" onclick="addQuestion()">Submit</button>
+      </div>
+    </div>
+  `;
+}
+
+function addQuestion() {
+  const title = document.getElementById("qTitle").value.trim();
+  const body = document.getElementById("qBody").value.trim();
+  if (!title || !body) {
+    alert("Both fields required");
+    return;
+  }
+  const newQ = {
+    id: Date.now(),
+    title,
+    body,
+    responses: [],
+    resolved: false
+  };
+  questions.unshift(newQ);
+  saveData();
+  renderList();
+  showNewForm();
+}
+
+function showDetail(id) {
+  const q = questions.find(q => q.id === id);
+  if (!q) return;
+  detailArea.innerHTML = `
+    <div class="card">
+      <h3>Question</h3>
+      <div class="card">
+        <div class="q-title">${q.title}</div>
+        <div class="q-sub">${q.body}</div>
+      </div>
+      <br>
+      <button class="resolve-btn" onclick="resolveQuestion(${id})">Resolve</button>
+      <div class="responses">
+        <h4>Responses</h4>
+        ${q.responses.length ? q.responses.map(r => `
+          <div class="response-item">
+            <div class="response-name">${r.name}</div>
+            <div>${r.comment}</div>
+          </div>
+        `).join("") : "No responses yet"}
+      </div>
+      <div style="margin-top:10px">
+        <h4>Add Response</h4>
+        <label>Name</label>
+        <input id="respName" />
+        <label>Comment</label>
+        <textarea id="respComment"></textarea>
+        <div class="form-actions">
+          <button class="primary" onclick="addResponse(${id})">Submit</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function addResponse(id) {
+  const name = document.getElementById("respName").value.trim();
+  const comment = document.getElementById("respComment").value.trim();
+  if (!name || !comment) {
+    alert("Both fields required");
+    return;
+  }
+  const q = questions.find(q => q.id === id);
+  q.responses.push({ name, comment });
+  saveData();
+  showDetail(id);
+}
+
+function resolveQuestion(id) {
+  if (!confirm("Mark this question as resolved?")) return;
+  questions = questions.filter(q => q.id !== id);
+  saveData();
+  renderList();
+  showNewForm();
+}
+
+// Event listeners
+document.getElementById("newQuestionBtn").onclick = showNewForm;
+document.getElementById("searchBox").oninput = function() {
+  renderList(this.value.toLowerCase());
+};
+
+// init
+renderList();
+showNewForm();
+</script>
+</body>
+</html>
