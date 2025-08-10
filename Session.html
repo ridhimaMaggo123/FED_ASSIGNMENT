@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Pomodoro Clock</title>
+<style>
+  :root{
+    --bg:#3e3029;
+    --panel:#201a18;
+    --accent:#ef7846; /* orange */
+    --teal:#17b7b7;
+    --muted:#cfc4bd;
+    --card:#efefec;
+    --frame:#6b6b6b;
+  }
+
+  html,body{
+    height:100%;
+    margin:0;
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    background: linear-gradient(180deg,#f2d3b0 0%, #e7ca9a 100%);
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  /* container (exact dimensions requested) */
+  .container{
+    width:220px;
+    height:460px;
+    background: rgba(0,0,0,0.15);
+    display:flex;
+    flex-direction:column;
+    border-radius:6px;
+    box-shadow: 0 20px 30px rgba(0,0,0,0.35);
+    overflow:hidden;
+  }
+
+  /* top area (visual frame with 'screen') */
+  .top {
+    flex: 1.1;
+    background: var(--bg);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+  }
+
+  .frame {
+    width:160px;
+    height:160px;
+    background: var(--card);
+    border:12px solid var(--frame);
+    box-shadow: inset 0 8px 0 rgba(255,255,255,0.35);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:4px;
+    position:relative;
+  }
+
+  /* small progress tab at top of frame that changes color for session/break */
+  .frame::before{
+    content:"";
+    position:absolute;
+    top:-6px;
+    left:50%;
+    transform:translateX(-50%);
+    height:12px;
+    width:40px;
+    border-radius:2px;
+    background: var(--teal);
+  }
+
+  /* title text under frame */
+  .stage {
+    margin-top:12px;
+    color: #efe7e3;
+    font-weight:600;
+    font-size:18px;
+  }
+
+  /* time display */
+  .time {
+    font-size:48px;
+    color:var(--accent);
+    letter-spacing:2px;
+    font-weight:600;
+  }
+
+  /* bottom area */
+  .bottom {
+    flex: 1;
+    background: var(--panel);
+    padding:12px 14px;
+    color:var(--muted);
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+  }
+
+  .controls {
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+  }
+
+  .control {
+    flex:1;
+    text-align:center;
+  }
+
+  .control .label {
+    font-size:12px;
+    text-transform:lowercase;
+    opacity:0.9;
+    margin-bottom:6px;
+  }
+
+  .minutes {
+    color: var(--teal);
+    font-size:20px;
+    font-weight:700;
+    margin-bottom:8px;
+  }
+
+  .minutes.break { color: var(--accent); }
+
+  .step {
+    display:flex;
+    justify-content:center;
+    gap:8px;
+  }
+
+  .btn-circle {
+    width:28px;
+    height:24px;
+    border-radius:6px;
+    background:#111;
+    color:#fff;
+    border: none;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.6);
+    font-weight:700;
+  }
+  .btn-circle:disabled{
+    opacity:0.45;
+    cursor:not-allowed;
+  }
+
+  .divider {
+    height:1px;
+    background: rgba(255,255,255,0.06);
+    margin:8px 0;
+  }
+
+  .actions {
+    display:flex;
+    gap:12px;
+    justify-content:space-around;
+    align-items:center;
+  }
+
+  .action-btn{
+    background:#111;
+    color:#fff;
+    padding:8px 18px;
+    border-radius:6px;
+    border:none;
+    cursor:pointer;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+    font-weight:700;
+  }
+  .action-btn:active{ transform: translateY(1px); }
+
+  .action-btn.primary{
+    background:var(--panel);
+    color:#fff;
+  }
+
+  /* make frame progress color change for break/session */
+  .frame.session::before { background: var(--teal); }
+  .frame.break::before   { background: var(--accent); }
+
+  /* small label for 'Session X' / 'Break' */
+  .small {
+    font-size:12px;
+    color:#e9dfd9;
+    margin-top:6px;
+  }
+
+  /* responsive minor */
+  @media (max-width:420px){
+    .container { transform: scale(1); }
+  }
+</style>
+</head>
+<body>
+
+<div class="container" role="application" aria-label="Pomodoro clock">
+  <div class="top">
+    <div id="frame" class="frame session" aria-hidden="true">
+      <div id="time" class="time">20:00</div>
+    </div>
+    <div id="stage" class="stage">Session 1</div>
+    <div id="small" class="small">session running</div>
+  </div>
+
+  <div class="bottom" role="region" aria-label="controls">
+    <div class="controls">
+      <div class="control">
+        <div class="label">session time</div>
+        <div id="sessionValue" class="minutes">20 min</div>
+        <div class="step">
+          <button id="sessMinus" class="btn-circle" aria-label="reduce session">-</button>
+          <button id="sessPlus" class="btn-circle" aria-label="increase session">+</button>
+        </div>
+      </div>
+
+      <div class="control">
+        <div class="label">break time</div>
+        <div id="breakValue" class="minutes break">5 min</div>
+        <div class="step">
+          <button id="breakMinus" class="btn-circle" aria-label="reduce break">-</button>
+          <button id="breakPlus" class="btn-circle" aria-label="increase break">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider" aria-hidden="true"></div>
+
+    <div class="actions">
+      <button id="startPause" class="action-btn primary">Start</button>
+      <button id="reset" class="action-btn">Reset</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/*
+ Pomodoro Clock
+ - sessionMinutes / breakMinutes (minutes)
+ - toggles between session and break automatically in loop
+ - +/- disabled while running
+ - Start toggles to Pause
+ - Reset stops, restores defaults, session count reset
+*/
+
+let sessionMinutes = 20;
+let breakMinutes = 5;
+
+let timer = null;
+let remainingSeconds = sessionMinutes * 60;
+let isRunning = false;
+let inBreak = false;
+let sessionCount = 1;
+
+const timeEl = document.getElementById('time');
+const frame = document.getElementById('frame');
+const stage = document.getElementById('stage');
+const small = document.getElementById('small');
+
+const sessionValueEl = document.getElementById('sessionValue');
+const breakValueEl = document.getElementById('breakValue');
+
+const sessMinus = document.getElementById('sessMinus');
+const sessPlus = document.getElementById('sessPlus');
+const breakMinus = document.getElementById('breakMinus');
+const breakPlus = document.getElementById('breakPlus');
+
+const startPauseBtn = document.getElementById('startPause');
+const resetBtn = document.getElementById('reset');
+
+function pad(n){ return String(n).padStart(2,'0'); }
+function formatSeconds(s){
+  const m = Math.floor(s/60);
+  const sec = s % 60;
+  return `${pad(m)}:${pad(sec)}`;
+}
+
+// initial UI render
+function renderSettings(){
+  sessionValueEl.textContent = `${sessionMinutes} min`;
+  breakValueEl.textContent = `${breakMinutes} min`;
+}
+
+function renderTime(){
+  timeEl.textContent = formatSeconds(remainingSeconds);
+}
+
+// update UI for mode
+function updateModeUI(){
+  if(inBreak){
+    frame.classList.remove('session'); frame.classList.add('break');
+    stage.textContent = 'Break';
+    small.textContent = 'take a short break';
+  } else {
+    frame.classList.remove('break'); frame.classList.add('session');
+    stage.textContent = `Session ${sessionCount}`;
+    small.textContent = isRunning ? 'session running' : 'ready';
+  }
+  renderTime();
+}
+
+// toggle +/- disabled
+function setControlsDisabled(disabled){
+  sessMinus.disabled = sessPlus.disabled = breakMinus.disabled = breakPlus.disabled = disabled;
+}
+
+// start timer (or resume)
+function startTimer(){
+  if(isRunning) return;
+  isRunning = true;
+  startPauseBtn.textContent = 'Pause';
+
+  // disable controls while running
+  setControlsDisabled(true);
+
+  const start = Date.now();
+  let lastTick = start;
+
+  // use setInterval 1000ms
+  timer = setInterval(() => {
+    const now = Date.now();
+    // count seconds passed using timestamps (more accurate over long time)
+    const elapsedMs = now - lastTick;
+    if(elapsedMs >= 1000){
+      const secondsPassed = Math.floor(elapsedMs / 1000);
+      remainingSeconds -= secondsPassed;
+      lastTick = now;
+    }
+
+    if(remainingSeconds <= 0){
+      // switch mode: if was session -> break, else -> session (increment session count)
+      if(!inBreak){
+        // session ended -> start break
+        inBreak = true;
+        remainingSeconds = breakMinutes * 60;
+        playBeep();
+      } else {
+        // break ended -> next session
+        inBreak = false;
+        sessionCount += 1;
+        remainingSeconds = sessionMinutes * 60;
+        playBeep();
+      }
+      updateModeUI();
+    }
+    renderTime();
+  }, 250);
+  updateModeUI();
+}
+
+// pause timer
+function pauseTimer(){
+  if(!isRunning) return;
+  isRunning = false;
+  startPauseBtn.textContent = 'Start';
+  clearInterval(timer);
+  timer = null;
+  // allow controls
+  setControlsDisabled(false);
+  updateModeUI();
+}
+
+// reset everything
+function resetAll(){
+  pauseTimer();
+  // reset values to defaults (you may preserve custom settings if preferred)
+  sessionMinutes = 20;
+  breakMinutes = 5;
+  sessionCount = 1;
+  inBreak = false;
+  remainingSeconds = sessionMinutes * 60;
+  renderSettings();
+  updateModeUI();
+}
+
+// beep sound (short)
+function playBeep(){
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.value = 880;
+    o.connect(g);
+    g.connect(ctx.destination);
+    g.gain.value = 0.02;
+    o.start(0);
+    setTimeout(()=>{ o.stop(); ctx.close(); }, 260);
+  } catch(e){
+    // ignore if audio not allowed
+  }
+}
+
+/* handlers for +/- buttons; disallow below 0 */
+sessMinus.addEventListener('click', () => {
+  if(sessionMinutes > 0){
+    sessionMinutes--;
+    remainingSeconds = sessionMinutes * 60;
+    renderSettings();
+    renderTime();
+  }
+});
+sessPlus.addEventListener('click', () => {
+  sessionMinutes++;
+  remainingSeconds = sessionMinutes * 60;
+  renderSettings();
+  renderTime();
+});
+breakMinus.addEventListener('click', () => {
+  if(breakMinutes > 0){
+    breakMinutes--;
+    renderSettings();
+    if(inBreak) remainingSeconds = breakMinutes * 60;
+    renderTime();
+  }
+});
+breakPlus.addEventListener('click', () => {
+  breakMinutes++;
+  renderSettings();
+  if(inBreak) remainingSeconds = breakMinutes * 60;
+  renderTime();
+});
+
+startPauseBtn.addEventListener('click', () => {
+  if(isRunning) pauseTimer();
+  else startTimer();
+});
+
+resetBtn.addEventListener('click', () => {
+  resetAll();
+});
+
+// initial render
+renderSettings();
+renderTime();
+updateModeUI();
+
+</script>
+</body>
+</html>
