@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>To-Do App with Storage</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    height: 100vh;
+    margin: 0;
+  }
+  .left-pane {
+    width: 40%;
+    padding: 20px;
+    background: #f5f5f5;
+    border-right: 1px solid #ccc;
+  }
+  .right-pane {
+    flex: 1;
+    padding: 20px;
+  }
+  h2 { margin-top: 0; }
+  ul { list-style: none; padding: 0; }
+  li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    background: white;
+    padding: 8px;
+    border-radius: 4px;
+  }
+  .task-text {
+    flex: 1;
+    margin: 0 8px;
+  }
+  .completed {
+    text-decoration: line-through;
+    color: gray;
+  }
+  .icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    margin-left: 5px;
+  }
+</style>
+</head>
+<body>
+
+<div class="left-pane">
+  <h2>Task List</h2>
+  <ul id="taskList"></ul>
+</div>
+
+<div class="right-pane">
+  <h2>I need to...</h2>
+  <textarea id="taskInput" placeholder="Type task and press Enter"></textarea>
+</div>
+
+<script>
+const taskList = document.getElementById('taskList');
+const taskInput = document.getElementById('taskInput');
+
+// Load tasks from localStorage
+function loadTasks() {
+  const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+  taskList.innerHTML = '';
+  tasks.forEach((task, index) => renderTask(task, index));
+}
+
+// Save tasks to localStorage
+function saveTasks(tasks) {
+  localStorage.setItem('tasks', JSON.stringify(tasks));
+}
+
+// Render a task in the DOM
+function renderTask(task, index) {
+  const li = document.createElement('li');
+
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.checked = task.completed;
+
+  const span = document.createElement('span');
+  span.textContent = task.text;
+  span.className = 'task-text';
+  if (task.completed) span.classList.add('completed');
+
+  const editBtn = document.createElement('button');
+  editBtn.innerHTML = '✏️';
+  editBtn.className = 'icon-btn';
+
+  const delBtn = document.createElement('button');
+  delBtn.innerHTML = '❌';
+  delBtn.className = 'icon-btn';
+
+  // Checkbox event
+  checkbox.addEventListener('change', () => {
+    const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+    tasks[index].completed = checkbox.checked;
+    saveTasks(tasks);
+    loadTasks();
+  });
+
+  // Delete event
+  delBtn.addEventListener('click', () => {
+    const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+    tasks.splice(index, 1);
+    saveTasks(tasks);
+    loadTasks();
+  });
+
+  // Edit event
+  editBtn.addEventListener('click', () => {
+    const newName = prompt('Update task:', task.text);
+    if (newName !== null && newName.trim() !== '') {
+      const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+      tasks[index].text = newName.trim();
+      saveTasks(tasks);
+      loadTasks();
+    }
+  });
+
+  li.appendChild(checkbox);
+  li.appendChild(span);
+  li.appendChild(editBtn);
+  li.appendChild(delBtn);
+  taskList.appendChild(li);
+}
+
+// Add task on Enter key
+taskInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const text = taskInput.value.trim();
+    if (text) {
+      const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+      tasks.push({ text, completed: false });
+      saveTasks(tasks);
+      taskInput.value = '';
+      loadTasks();
+    }
+  }
+});
+
+// Initial load
+loadTasks();
+</script>
+
+</body>
+</html>
