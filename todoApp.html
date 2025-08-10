@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>To-Do App</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    height: 100vh;
+    margin: 0;
+  }
+  .left-pane {
+    width: 40%;
+    padding: 20px;
+    background: #f5f5f5;
+    border-right: 1px solid #ccc;
+  }
+  .right-pane {
+    flex: 1;
+    padding: 20px;
+  }
+  h2 { margin-top: 0; }
+  ul { list-style: none; padding: 0; }
+  li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    background: white;
+    padding: 8px;
+    border-radius: 4px;
+  }
+  .delete-btn {
+    background: red;
+    color: white;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="left-pane">
+  <h2>Task List</h2>
+  <ul id="taskList"></ul>
+</div>
+
+<div class="right-pane">
+  <h2>I need to...</h2>
+  <form id="taskForm">
+    <input type="text" id="taskInput" placeholder="Enter task" required>
+    <button type="submit">Add Task</button>
+  </form>
+</div>
+
+<script>
+const taskForm = document.getElementById('taskForm');
+const taskList = document.getElementById('taskList');
+const taskInput = document.getElementById('taskInput');
+
+taskForm.addEventListener('submit', function(e) {
+  e.preventDefault();
+  const taskText = taskInput.value.trim();
+  if (taskText) {
+    addTask(taskText);
+    taskInput.value = '';
+  }
+});
+
+function addTask(text) {
+  const li = document.createElement('li');
+  
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  
+  const span = document.createElement('span');
+  span.textContent = text;
+  
+  const delBtn = document.createElement('button');
+  delBtn.textContent = 'x';
+  delBtn.className = 'delete-btn';
+  
+  delBtn.addEventListener('click', () => {
+    taskList.removeChild(li);
+  });
+  
+  checkbox.addEventListener('change', () => {
+    span.style.textDecoration = checkbox.checked ? 'line-through' : 'none';
+  });
+  
+  li.appendChild(checkbox);
+  li.appendChild(span);
+  li.appendChild(delBtn);
+  taskList.appendChild(li);
+}
+</script>
+
+</body>
+</html>
