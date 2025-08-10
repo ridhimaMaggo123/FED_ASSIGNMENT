@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Online Code Compiler</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+  }
+  h2 {
+    margin-bottom: 5px;
+  }
+  label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+  select {
+    padding: 6px;
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+  textarea {
+    width: 100%;
+    height: 300px;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    resize: none;
+  }
+  button {
+    background-color: #ffcc00;
+    border: none;
+    padding: 8px 20px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  button:hover {
+    background-color: #ffb700;
+  }
+  #output {
+    background-color: #000;
+    color: #fff;
+    padding: 10px;
+    min-height: 120px;
+    margin-top: 15px;
+    font-family: monospace;
+    white-space: pre-wrap;
+  }
+</style>
+</head>
+<body>
+
+<h2>Write a program to find factorial of a number</h2>
+<p>Type Your Code</p>
+
+<select id="language">
+  <option value="0">Python</option>
+  <option value="4">Javascript</option>
+  <option value="7">C</option>
+  <option value="77">CPP</option>
+  <option value="8">Java</option>
+</select>
+
+<textarea id="code">#Write your code</textarea>
+
+<button id="compileBtn">Compile</button>
+
+<h3>OUTPUT:</h3>
+<div id="output"></div>
+
+<script>
+document.getElementById("compileBtn").addEventListener("click", function () {
+  const code = document.getElementById("code").value;
+  const langId = document.getElementById("language").value;
+  const outputDiv = document.getElementById("output");
+
+  if (!code.trim()) {
+    outputDiv.textContent = "Error: Code is empty!";
+    return;
+  }
+
+  outputDiv.textContent = "Compiling...";
+
+  fetch("https://codequotient.com/api/executeCode", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code, langId })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.error) {
+      outputDiv.textContent = "Error: " + data.error;
+    } else {
+      const codeId = data.codeId;
+      let interval = setInterval(() => {
+        fetch(`https://codequotient.com/api/codeResult/${codeId}`)
+          .then(res => res.json())
+          .then(result => {
+            if (result.data && result.data.output !== undefined) {
+              clearInterval(interval);
+              if (result.data.errors) {
+                outputDiv.textContent = "Errors:\n" + result.data.errors;
+              } else {
+                outputDiv.textContent = result.data.output;
+              }
+            }
+          })
+          .catch(err => {
+            clearInterval(interval);
+            outputDiv.textContent = "Error fetching result.";
+          });
+      }, 2000);
+    }
+  })
+  .catch(err => {
+    outputDiv.textContent = "Error sending code.";
+  });
+});
+</script>
+
+</body>
+</html>
