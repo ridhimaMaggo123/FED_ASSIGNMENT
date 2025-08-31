@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hangman Game</title>
+  <style>
+    body {
+      background: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    h1 { margin-top: 20px; }
+    .letters {
+      margin: 20px auto;
+      max-width: 600px;
+    }
+    .letters button {
+      margin: 5px;
+      padding: 10px 15px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      background: #eee;
+    }
+    .letters button:disabled {
+      background: #666;
+      color: #ccc;
+      cursor: not-allowed;
+    }
+    #question {
+      margin: 20px;
+      font-size: 20px;
+    }
+    #answer {
+      font-size: 26px;
+      letter-spacing: 10px;
+    }
+    #lives {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+    #message {
+      font-size: 22px;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+    #restart {
+      display: none;
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 18px;
+      background: #4caf50;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>HANGMAN GAME</h1>
+  <p>Use the alphabet below to guess the word, or click hint to get a clue.</p>
+  
+  <div id="question"></div>
+  <div id="answer"></div>
+  <div class="letters" id="letters"></div>
+  <div id="lives"></div>
+  <div id="message"></div>
+  <button id="restart" onclick="startGame()">Play Again</button>
+
+  <script>
+    let questionData = [];
+    let currentQuestion = {};
+    let displayAnswer = [];
+    let lives = 10;
+
+    // Create A-Z buttons
+    function createAlphabetButtons() {
+      const lettersDiv = document.getElementById("letters");
+      const alphabet = "abcdefghijklmnopqrstuvwxyz";
+      lettersDiv.innerHTML = "";
+      for (let char of alphabet) {
+        let btn = document.createElement("button");
+        btn.textContent = char;
+        btn.onclick = () => handleGuess(char, btn);
+        lettersDiv.appendChild(btn);
+      }
+    }
+
+    // Fetch questions
+    async function loadQuestions() {
+      try {
+        let res = await fetch("http://codeapi.net.cws18.my-hosting-panel.com/hangman.php");
+        questionData = await res.json();
+        startGame();
+      } catch (err) {
+        document.getElementById("message").textContent = "Error loading questions!";
+      }
+    }
+
+    // Start a new game
+    function startGame() {
+      const randomIndex = Math.floor(Math.random() * questionData.length);
+      currentQuestion = questionData[randomIndex];
+
+      document.getElementById("question").textContent = currentQuestion.Question;
+      displayAnswer = Array(currentQuestion.Answer.length).fill("_");
+      document.getElementById("answer").textContent = displayAnswer.join(" ");
+      lives = 10;
+      document.getElementById("lives").textContent = `You have ${lives} lives`;
+      document.getElementById("message").textContent = "";
+      document.getElementById("restart").style.display = "none";
+      createAlphabetButtons();
+    }
+
+    // Handle guess
+    function handleGuess(letter, btn) {
+      btn.disabled = true;
+      let answer = currentQuestion.Answer.toLowerCase();
+      if (answer.includes(letter)) {
+        for (let i = 0; i < answer.length; i++) {
+          if (answer[i] === letter) {
+            displayAnswer[i] = currentQuestion.Answer[i]; // keep original case
+          }
+        }
+        document.getElementById("answer").textContent = displayAnswer.join(" ");
+        if (!displayAnswer.includes("_")) {
+          document.getElementById("message").textContent = "🎉 You have won!";
+          endGame();
+        }
+      } else {
+        lives--;
+        document.getElementById("lives").textContent = `You have ${lives} lives`;
+        if (lives <= 0) {
+          document.getElementById("message").textContent = `❌ Game Over! The answer was: ${currentQuestion.Answer}`;
+          endGame();
+        }
+      }
+    }
+
+    // End game: disable all buttons + show restart
+    function endGame() {
+      const buttons = document.querySelectorAll("#letters button");
+      buttons.forEach(btn => btn.disabled = true);
+      document.getElementById("restart").style.display = "inline-block";
+    }
+
+    loadQuestions();
+  </script>
+</body>
+</html>
